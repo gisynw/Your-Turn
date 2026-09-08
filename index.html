@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Your Trun</title>
+  <meta name="description" content="A simple classroom tool for randomly selecting students and tracking selection frequency." />
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #697386;
+      --border: #dfe5ef;
+      --accent: #4f46e5;
+      --accent-dark: #3730a3;
+      --success: #0f766e;
+      --danger: #b42318;
+      --shadow: 0 12px 32px rgba(18, 31, 53, 0.08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(79, 70, 229, 0.08), transparent 26rem),
+        var(--bg);
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 36px 20px 56px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: end;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3rem);
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .pill {
+      background: #eef2ff;
+      color: var(--accent-dark);
+      border: 1px solid #c7d2fe;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 22px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .picker {
+      padding: 34px;
+      min-height: 430px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+
+    .student-name {
+      min-height: 92px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(2.1rem, 6vw, 4.8rem);
+      line-height: 1.05;
+      font-weight: 850;
+      letter-spacing: -0.045em;
+      margin: 4px 0 22px;
+    }
+
+    .hint {
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 12px;
+      padding: 13px 18px;
+      font-size: 0.98rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    .primary {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 8px 18px rgba(79, 70, 229, 0.22);
+    }
+
+    .primary:hover { background: var(--accent-dark); }
+
+    .secondary {
+      background: #eef2f7;
+      color: var(--text);
+    }
+
+    .danger {
+      background: #fff1f0;
+      color: var(--danger);
+    }
+
+    .options {
+      margin-top: 18px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .options label {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .side {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .side-card {
+      padding: 22px;
+    }
+
+    .side-card h2 {
+      margin: 0 0 14px;
+      font-size: 1.15rem;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .stat {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .stat .value {
+      display: block;
+      font-size: 1.7rem;
+      font-weight: 850;
+    }
+
+    .stat .label {
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .roster {
+      max-height: 270px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .roster-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 0;
+      border-bottom: 1px solid #edf1f6;
+    }
+
+    .roster-item:last-child { border-bottom: 0; }
+
+    .count-badge {
+      min-width: 34px;
+      text-align: center;
+      background: #eef2ff;
+      color: var(--accent-dark);
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-weight: 800;
+      font-size: 0.82rem;
+    }
+
+    dialog {
+      border: 0;
+      width: min(760px, calc(100vw - 30px));
+      border-radius: 18px;
+      padding: 0;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+    }
+
+    dialog::backdrop {
+      background: rgba(15, 23, 42, 0.42);
+      backdrop-filter: blur(3px);
+    }
+
+    .modal-head {
+      padding: 22px 24px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .modal-head h2 { margin: 0; }
+
+    .close-btn {
+      background: #eef2f7;
+      padding: 8px 11px;
+    }
+
+    .summary-wrap {
+      padding: 18px 24px 24px;
+      max-height: 70vh;
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 11px 10px;
+      border-bottom: 1px solid #edf1f6;
+    }
+
+    th {
+      font-size: 0.82rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    td:last-child, th:last-child { text-align: right; }
+
+    .bar-track {
+      height: 8px;
+      background: #eef2f7;
+      border-radius: 999px;
+      overflow: hidden;
+      min-width: 140px;
+    }
+
+    .bar {
+      height: 100%;
+      background: var(--accent);
+      border-radius: inherit;
+    }
+
+    .footer-note {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-top: 18px;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(.92); opacity: .3; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .pop { animation: pop 180ms ease-out; }
+
+
+
+    .multi-pick-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .multi-pick-controls label {
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    .multi-pick-controls input {
+      width: 82px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 12px;
+      font-size: 1rem;
+      color: var(--text);
+      background: white;
+      outline: none;
+    }
+
+    .multi-pick-controls input:focus {
+      border-color: #a5b4fc;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.10);
+    }
+
+    .student-name.multiple {
+      font-size: clamp(1.5rem, 4vw, 2.8rem);
+      line-height: 1.3;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .picked-line {
+      display: block;
+    }
+
+    .group-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .group-controls label {
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    .group-controls input {
+      width: 86px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 12px;
+      font-size: 1rem;
+      color: var(--text);
+      background: white;
+      outline: none;
+    }
+
+    .group-controls input:focus {
+      border-color: #a5b4fc;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.10);
+    }
+
+    .groups-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .group-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .group-box h3 {
+      margin: 0 0 9px;
+      font-size: 1rem;
+    }
+
+    .group-box ol {
+      margin: 0;
+      padding-left: 22px;
+    }
+
+    .group-box li {
+      margin: 5px 0;
+    }
+
+    .group-note {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    @media (max-width: 820px) {
+      .header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .grid { grid-template-columns: 1fr; }
+      .picker { min-height: 360px; padding: 28px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="header">
+      <div>
+        <h1>Your Trun</h1>
+        <p class="subtitle">Pick a student at random and keep a running frequency count.</p>
+      </div>
+      <div class="pill" id="rosterCount"></div>
+    </div>
+
+    <section class="grid">
+      <div class="card picker">
+        <div class="eyebrow">Selected student</div>
+        <div class="student-name" id="studentName" aria-live="polite">Ready?</div>
+        <div class="hint" id="pickHint">Click the button to randomly choose a student.</div>
+
+        <div class="actions">
+          <button class="primary" id="pickBtn">🎲 Pick a Student</button>
+          <button class="secondary" id="summaryBtn">📊 Summary</button>
+          <button class="danger" id="resetBtn">↺ Reset Counts</button>
+        </div>
+
+        <div class="multi-pick-controls">
+          <label for="multiPickCount">Pick multiple students</label>
+          <input id="multiPickCount" type="number" min="2" max="21" value="3" />
+          <button class="secondary" id="pickMultipleBtn">🎯 Pick Multiple</button>
+        </div>
+
+        <div class="options">
+          <label>
+            <input type="checkbox" id="avoidRepeat" checked />
+            Avoid immediately repeating the same student
+          </label>
+        </div>
+      </div>
+
+      <aside class="side">
+        <div class="card side-card">
+          <h2>Class Snapshot</h2>
+          <div class="stats-row">
+            <div class="stat">
+              <span class="value" id="totalPicks">0</span>
+              <span class="label">Total picks</span>
+            </div>
+            <div class="stat">
+              <span class="value" id="pickedStudents">0</span>
+              <span class="label">Students picked</span>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="card side-card">
+          <h2>Group Discussion</h2>
+          <div class="group-controls">
+            <label for="groupCount">Number of groups</label>
+            <input id="groupCount" type="number" min="2" max="21" value="4" />
+            <button class="primary" id="divideGroupsBtn">👥 Divide into Groups</button>
+          </div>
+          <p class="group-note">Students are shuffled randomly and distributed as evenly as possible.</p>
+          <div class="groups-grid" id="groupsGrid"></div>
+        </div>
+
+        <div class="card side-card">
+          <h2>Roster & Frequency</h2>
+          <div class="roster" id="rosterList"></div>
+        </div>
+      </aside>
+    </section>
+
+    <p class="footer-note">
+      Counts are saved only in this browser using localStorage.
+    </p>
+  </main>
+
+  <dialog id="summaryDialog">
+    <div class="modal-head">
+      <h2>Selection Summary</h2>
+      <button class="close-btn" id="closeSummary" aria-label="Close">✕</button>
+    </div>
+    <div class="summary-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Frequency</th>
+            <th>Visual</th>
+          </tr>
+        </thead>
+        <tbody id="summaryBody"></tbody>
+      </table>
+    </div>
+  </dialog>
+
+  <script>
+    const students = [
+      "Connor Bird",
+      "Kathryn Bland",
+      "Jacob Breaux",
+      "Samantha Brookman",
+      "Lane Carpenter",
+      "Kaely Cresswell",
+      "Brett Dumas",
+      "Aubrey Harrison",
+      "Lauryn Jackson",
+      "Tristan Jones",
+      "Elliott Lehr",
+      "Linn Linn",
+      "Ash Louton",
+      "LayLa Lovett",
+      "Micah Mooney",
+      "Jaida Poirrier",
+      "Alexis Reedy",
+      "Silvie Reid",
+      "Brittany Riley",
+      "Alexa Stiles",
+      "Julisa Williams"
+    ];
+
+    const STORAGE_KEY = "student-picker-counts-v2-firstname-first";
+    const LAST_PICK_KEY = "student-picker-last-v2-firstname-first";
+
+    const studentName = document.getElementById("studentName");
+    const pickHint = document.getElementById("pickHint");
+    const pickBtn = document.getElementById("pickBtn");
+    const summaryBtn = document.getElementById("summaryBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const rosterList = document.getElementById("rosterList");
+    const totalPicks = document.getElementById("totalPicks");
+    const pickedStudents = document.getElementById("pickedStudents");
+    const rosterCount = document.getElementById("rosterCount");
+    const avoidRepeat = document.getElementById("avoidRepeat");
+    const multiPickCount = document.getElementById("multiPickCount");
+    const pickMultipleBtn = document.getElementById("pickMultipleBtn");
+    const summaryDialog = document.getElementById("summaryDialog");
+    const summaryBody = document.getElementById("summaryBody");
+    const closeSummary = document.getElementById("closeSummary");
+    const groupCount = document.getElementById("groupCount");
+    const divideGroupsBtn = document.getElementById("divideGroupsBtn");
+    const groupsGrid = document.getElementById("groupsGrid");
+
+    let counts = loadCounts();
+    let lastPick = localStorage.getItem(LAST_PICK_KEY);
+
+    function loadCounts() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+        return Object.fromEntries(students.map(name => [name, Number(saved[name]) || 0]));
+      } catch {
+        return Object.fromEntries(students.map(name => [name, 0]));
+      }
+    }
+
+    function saveCounts() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(counts));
+    }
+
+
+    function getRandomUniqueStudents(numberToPick) {
+      let pool = [...students];
+
+      // If enabled and possible, keep the most recently selected student
+      // out of the next draw.
+      if (avoidRepeat.checked && lastPick && pool.length > numberToPick) {
+        pool = pool.filter(name => name !== lastPick);
+      }
+
+      // Fisher-Yates shuffle.
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+
+      return pool.slice(0, numberToPick);
+    }
+
+    function pickMultipleStudents() {
+      let n = Number.parseInt(multiPickCount.value, 10);
+
+      if (!Number.isInteger(n)) n = 3;
+      n = Math.max(2, Math.min(students.length, n));
+      multiPickCount.value = n;
+
+      const chosen = getRandomUniqueStudents(n);
+
+      chosen.forEach(name => {
+        counts[name] += 1;
+      });
+
+      lastPick = chosen[chosen.length - 1];
+      localStorage.setItem(LAST_PICK_KEY, lastPick);
+      saveCounts();
+
+      studentName.classList.remove("pop");
+      studentName.classList.add("multiple");
+      void studentName.offsetWidth;
+      studentName.innerHTML = chosen
+        .map((name, index) => `<span class="picked-line">${index + 1}. ${escapeHtml(name)}</span>`)
+        .join("");
+      studentName.classList.add("pop");
+
+      pickHint.textContent = `${chosen.length} students selected. Each selection was added to the frequency summary.`;
+      render();
+    }
+
+    function pickRandomStudent() {
+      let pool = students;
+
+      if (avoidRepeat.checked && students.length > 1 && lastPick) {
+        pool = students.filter(name => name !== lastPick);
+      }
+
+      const chosen = pool[Math.floor(Math.random() * pool.length)];
+      counts[chosen] += 1;
+      lastPick = chosen;
+
+      localStorage.setItem(LAST_PICK_KEY, lastPick);
+      saveCounts();
+
+      studentName.classList.remove("pop", "multiple");
+      void studentName.offsetWidth;
+      studentName.textContent = chosen;
+      studentName.classList.add("pop");
+
+      pickHint.textContent = `Selected ${counts[chosen]} time${counts[chosen] === 1 ? "" : "s"}.`;
+      render();
+    }
+
+    function render() {
+      const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
+      const unique = Object.values(counts).filter(value => value > 0).length;
+
+      totalPicks.textContent = total;
+      pickedStudents.textContent = unique;
+      rosterCount.textContent = `${students.length} students`;
+
+      rosterList.innerHTML = students
+        .map(name => `
+          <div class="roster-item">
+            <span>${escapeHtml(name)}</span>
+            <span class="count-badge">${counts[name]}</span>
+          </div>
+        `)
+        .join("");
+
+      renderSummary();
+    }
+
+    function renderSummary() {
+      const maxCount = Math.max(1, ...Object.values(counts));
+
+      const sorted = [...students].sort((a, b) => {
+        if (counts[b] !== counts[a]) return counts[b] - counts[a];
+        return a.localeCompare(b);
+      });
+
+      summaryBody.innerHTML = sorted
+        .map(name => {
+          const pct = (counts[name] / maxCount) * 100;
+          return `
+            <tr>
+              <td>${escapeHtml(name)}</td>
+              <td>${counts[name]}</td>
+              <td>
+                <div class="bar-track" aria-label="${counts[name]} picks">
+                  <div class="bar" style="width:${pct}%"></div>
+                </div>
+              </td>
+            </tr>
+          `;
+        })
+        .join("");
+    }
+
+
+    function shuffledStudents() {
+      const shuffled = [...students];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    }
+
+    function divideIntoGroups() {
+      let n = Number.parseInt(groupCount.value, 10);
+
+      if (!Number.isInteger(n)) n = 4;
+      n = Math.max(2, Math.min(students.length, n));
+      groupCount.value = n;
+
+      const shuffled = shuffledStudents();
+      const groups = Array.from({ length: n }, () => []);
+
+      // Round-robin distribution keeps group sizes as even as possible.
+      shuffled.forEach((name, index) => {
+        groups[index % n].push(name);
+      });
+
+      groupsGrid.innerHTML = groups
+        .map((group, index) => `
+          <div class="group-box">
+            <h3>Group ${index + 1} <span class="count-badge">${group.length}</span></h3>
+            <ol>
+              ${group.map(name => `<li>${escapeHtml(name)}</li>`).join("")}
+            </ol>
+          </div>
+        `)
+        .join("");
+    }
+
+    function resetCounts() {
+      const ok = confirm("Reset all student selection counts to zero?");
+      if (!ok) return;
+
+      counts = Object.fromEntries(students.map(name => [name, 0]));
+      lastPick = null;
+      localStorage.removeItem(LAST_PICK_KEY);
+      saveCounts();
+
+      studentName.classList.remove("multiple");
+      studentName.textContent = "Ready?";
+      pickHint.textContent = "Click the button to randomly choose a student.";
+      render();
+    }
+
+    function escapeHtml(value) {
+      return value.replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      })[char]);
+    }
+
+    pickBtn.addEventListener("click", pickRandomStudent);
+    pickMultipleBtn.addEventListener("click", pickMultipleStudents);
+    summaryBtn.addEventListener("click", () => {
+      renderSummary();
+      summaryDialog.showModal();
+    });
+    resetBtn.addEventListener("click", resetCounts);
+    divideGroupsBtn.addEventListener("click", divideIntoGroups);
+    closeSummary.addEventListener("click", () => summaryDialog.close());
+    summaryDialog.addEventListener("click", (event) => {
+      if (event.target === summaryDialog) summaryDialog.close();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.code === "Space" && !summaryDialog.open && event.target.tagName !== "INPUT") {
+        event.preventDefault();
+        pickRandomStudent();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
